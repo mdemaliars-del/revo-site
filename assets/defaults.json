@@ -1,0 +1,362 @@
+{
+ "melee/2h/1": {
+  "bar": [
+   "meteor",
+   "overpower",
+   "berserk",
+   "punish",
+   "rend",
+   "dismember",
+   "chaosroar",
+   "gfury",
+   "adaptive2h",
+   "pulverise",
+   "hurricane"
+  ],
+  "dpt": 104.07607291666666,
+  "casts": {
+   "punish": 278,
+   "rend": 639,
+   "dismember": 667,
+   "chaosroar": 111,
+   "gfury": 389,
+   "adaptive2h": 807,
+   "attack": 332,
+   "hurricane": 222,
+   "meteor": 111,
+   "overpower": 222,
+   "berserk": 111,
+   "pulverise": 111
+  }
+ },
+ "melee/2h/3": {
+  "bar": [
+   "meteor",
+   "berserk",
+   "adaptive2h",
+   "dismember",
+   "hurricane",
+   "gfury",
+   "overpower",
+   "punish",
+   "rend",
+   "chaosroar",
+   "backhand"
+  ],
+  "dpt": 178.64466145833333,
+  "casts": {
+   "adaptive2h": 1334,
+   "dismember": 666,
+   "gfury": 445,
+   "punish": 222,
+   "rend": 333,
+   "hurricane": 444,
+   "chaosroar": 111,
+   "backhand": 1,
+   "meteor": 111,
+   "berserk": 111,
+   "overpower": 222
+  }
+ },
+ "melee/dw/1": {
+  "bar": [
+   "chaosroar",
+   "punish",
+   "rend",
+   "meteor",
+   "dismember",
+   "berserk",
+   "adaptivedw",
+   "gfury",
+   "assault",
+   "gbarge"
+  ],
+  "dpt": 105.23150520833333,
+  "casts": {
+   "chaosroar": 119,
+   "punish": 296,
+   "rend": 591,
+   "dismember": 709,
+   "adaptivedw": 712,
+   "gfury": 238,
+   "gbarge": 1,
+   "assault": 471,
+   "meteor": 118,
+   "berserk": 117
+  }
+ },
+ "melee/dw/3": {
+  "bar": [
+   "gflurry",
+   "adaptivedw",
+   "gfury",
+   "meteor",
+   "berserk",
+   "overpower",
+   "rend",
+   "punish",
+   "dismember",
+   "chaosroar"
+  ],
+  "dpt": 166.9016318551058,
+  "casts": {
+   "adaptivedw": 1029,
+   "gfury": 344,
+   "rend": 458,
+   "gflurry": 343,
+   "punish": 229,
+   "dismember": 343,
+   "meteor": 114,
+   "berserk": 114,
+   "overpower": 228,
+   "chaosroar": 114,
+   "attack": 113
+  }
+ },
+ "ranged/2h/1": {
+  "bar": [
+   "imbue",
+   "gds",
+   "shadowtendrils",
+   "gricochet",
+   "galeshot",
+   "snipe",
+   "rapidfire",
+   "piercing",
+   "corruptshot",
+   "deadshot"
+  ],
+  "dpt": 89.17144791666666,
+  "casts": {
+   "shadowtendrils": 158,
+   "gricochet": 632,
+   "galeshot": 316,
+   "snipe": 198,
+   "piercing": 1106,
+   "rapidfire": 316,
+   "corruptshot": 313,
+   "ranged": 81,
+   "imbue": 118,
+   "gds": 118,
+   "deadshot": 118
+  }
+ },
+ "ranged/2h/3": {
+  "bar": [
+   "gds",
+   "corruptshot",
+   "gricochet",
+   "snipe",
+   "piercing",
+   "bombardment",
+   "imbue",
+   "shadowtendrils",
+   "galeshot",
+   "rapidfire"
+  ],
+  "dpt": 137.03289583333333,
+  "casts": {
+   "gricochet": 655,
+   "snipe": 219,
+   "piercing": 1426,
+   "shadowtendrils": 110,
+   "corruptshot": 436,
+   "bombardment": 544,
+   "galeshot": 109,
+   "imbue": 109,
+   "gds": 109,
+   "rapidfire": 107
+  }
+ },
+ "ranged/dw/1": {
+  "bar": [
+   "imbue",
+   "gds",
+   "shadowtendrils",
+   "gricochet",
+   "galeshot",
+   "snipe",
+   "rapidfire",
+   "piercing",
+   "corruptshot",
+   "deadshot"
+  ],
+  "dpt": 89.17144791666666,
+  "casts": {
+   "shadowtendrils": 158,
+   "gricochet": 632,
+   "galeshot": 316,
+   "snipe": 198,
+   "piercing": 1106,
+   "rapidfire": 316,
+   "corruptshot": 313,
+   "ranged": 81,
+   "imbue": 118,
+   "gds": 118,
+   "deadshot": 118
+  }
+ },
+ "ranged/dw/3": {
+  "bar": [
+   "gds",
+   "corruptshot",
+   "gricochet",
+   "snipe",
+   "piercing",
+   "bombardment",
+   "imbue",
+   "shadowtendrils",
+   "galeshot",
+   "rapidfire"
+  ],
+  "dpt": 137.03289583333333,
+  "casts": {
+   "gricochet": 655,
+   "snipe": 219,
+   "piercing": 1426,
+   "shadowtendrils": 110,
+   "corruptshot": 436,
+   "bombardment": 544,
+   "galeshot": 109,
+   "imbue": 109,
+   "gds": 109,
+   "rapidfire": 107
+  }
+ },
+ "magic/2h/1": {
+  "bar": [
+   "magma",
+   "corruptblast",
+   "wildmagic",
+   "combust",
+   "gconc",
+   "gsonic",
+   "dragonbreath"
+  ],
+  "dpt": 78.0675191666646,
+  "casts": {
+   "combust": 397,
+   "gconc": 1025,
+   "gsonic": 397,
+   "magma": 298,
+   "corruptblast": 397,
+   "wildmagic": 991,
+   "dragonbreath": 495
+  }
+ },
+ "magic/2h/3": {
+  "bar": [
+   "gchain",
+   "dragonbreath",
+   "omnipower",
+   "gsonic",
+   "tsunami",
+   "gsunshine",
+   "magma",
+   "corruptblast",
+   "combust",
+   "gconc"
+  ],
+  "dpt": 162.93118020833333,
+  "casts": {
+   "gchain": 667,
+   "dragonbreath": 1000,
+   "gsonic": 417,
+   "magma": 334,
+   "corruptblast": 416,
+   "combust": 333,
+   "gconc": 499,
+   "omnipower": 167,
+   "tsunami": 83,
+   "gsunshine": 83,
+   "magic": 1
+  }
+ },
+ "magic/dw/1": {
+  "bar": [
+   "magma",
+   "corruptblast",
+   "wildmagic",
+   "combust",
+   "gconc",
+   "gsonic",
+   "dragonbreath"
+  ],
+  "dpt": 78.0675191666646,
+  "casts": {
+   "combust": 397,
+   "gconc": 1025,
+   "gsonic": 397,
+   "magma": 298,
+   "corruptblast": 397,
+   "wildmagic": 991,
+   "dragonbreath": 495
+  }
+ },
+ "magic/dw/3": {
+  "bar": [
+   "gchain",
+   "dragonbreath",
+   "omnipower",
+   "gsonic",
+   "tsunami",
+   "gsunshine",
+   "magma",
+   "corruptblast",
+   "combust",
+   "gconc"
+  ],
+  "dpt": 162.93118020833333,
+  "casts": {
+   "gchain": 667,
+   "dragonbreath": 1000,
+   "gsonic": 417,
+   "magma": 334,
+   "corruptblast": 416,
+   "combust": 333,
+   "gconc": 499,
+   "omnipower": 167,
+   "tsunami": 83,
+   "gsunshine": 83,
+   "magic": 1
+  }
+ },
+ "necro/dw/1": {
+  "bar": [
+   "commandskel",
+   "soulsap",
+   "finger",
+   "bloat",
+   "soulstrike",
+   "touch"
+  ],
+  "dpt": 76.64541666666666,
+  "casts": {
+   "commandskel": 445,
+   "soulsap": 1333,
+   "soulstrike": 1333,
+   "touch": 200,
+   "finger": 200,
+   "bloat": 489
+  }
+ },
+ "necro/dw/3": {
+  "bar": [
+   "scythe",
+   "soulsap",
+   "soulstrike",
+   "touch",
+   "commandskel",
+   "bloat"
+  ],
+  "dpt": 118.75055165356403,
+  "casts": {
+   "soulsap": 1333,
+   "soulstrike": 1567,
+   "touch": 236,
+   "scythe": 704,
+   "commandskel": 159,
+   "bloat": 1
+  }
+ }
+}
