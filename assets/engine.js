@@ -13,6 +13,7 @@ function simulate(D, bar, o){
   var critBase=CRIT+0.02*(M.biting||0)+(M.grimoire?0.12:0)+(M.reaver?0.05:0);
   var dmgMult=(M.reaver?0.95:1)*(1+(M.bfury?0.055:0))*(1+0.025*(M.ruthless||0));
   var soulCap=(M.lantern&&o.style==='necro')?5:3; var havocRegenUntil=-1;
+  var P=o.policy||{mode:'revo'}, RU=P.rules||{}, trace=o.trace?[]:null;
   var t=0, adren=o.startAdren||0, bl=0, cd={}, ch={}, chq={}, buffs={}, roar=false, critNext=0;
   var dst=0, dwin=-1, sst=0, swin=-1, hp=HP, dmg=0, casts={}, pend={}, next=0;
   var necrosis=0, souls=0, flow=0, chainP=null, combustUntil=-1, cmUntil=-1, searUntil=-1, imbUntil=-1, tsuUntil=-1, meteorUntil=-1;
@@ -29,6 +30,11 @@ function simulate(D, bar, o){
     else if((cd[grp(k)]||0)>t) return false;
     if(a.soulStrike&&souls<1) return false; if(a.volley&&souls<2) return false;
     return adren>=cost(k);}
+  function ruleOK(k){ if(P.mode==='revo') return !A[k].spec; var r=RU[k]; if(!r) return true;
+    if(r.buf&&adren<cost(k)+r.buf) return false;
+    if(r.wait==='stack'){ if(A[k].style==='melee'&&bl<4) return false; if((A[k].finger||A[k].deathGrasp)&&necrosis<6) return false; if(A[k].volley&&souls<soulCap) return false; }
+    if(r.wait==='buff'&&!(roar||critNext>0||has('zerk')||has('ds')||has('sun')||has('ld'))) return false;
+    return true; }
   function mult(a,kind){var m=1; if(kind!=='d') return m;
     if(a.style==='melee'&&has('zerk')) m*=1.75; if(a.style==='ranged'&&has('ds')) m*=1.5; if(a.style==='magic'&&has('sun')) m*=1.5; return m;}
   while(t<ticks){
@@ -37,11 +43,13 @@ function simulate(D, bar, o){
     for(var k in chq){ while(chq[k].length&&chq[k][0]<=t){chq[k].shift(); ch[k]++;} }
     if(dst>0&&t>dwin) dst=0; if(sst>0&&t>swin){ sst=0; cd.scythe=t; }
     if(t>=next){
-      var c=null; for(var i=0;i<bar.length;i++){ if(usable(bar[i])){c=bar[i];break;} } if(!c) c=basic;
+      var c=null; for(var i=0;i<bar.length;i++){ if(usable(bar[i])&&ruleOK(bar[i])){c=bar[i];break;} } if(!c) c=basic;
+      if(trace&&trace.length<400) trace.push([t,c,Math.round(adren)]);
       var a=A[c]; casts[c]=(casts[c]||0)+1; var hits=(a.hits||[]).slice();
       if(M.igneous){ if(c==='overpower') hits=[[3,310,false,'d'],[3,310,false,'d']]; if(c==='deadshot') hits=[1,1,1,1,1,1,1,1].map(function(){return [1,65,false,'d'];}); if(c==='omnipower') hits=[1,1,1,1].map(function(){return [1,135,false,'d'];}); }
       var _x=0, lock=a.lock||0, extraM=1, gc=!!a.guaranteedCrit;
-      var pay=cost(c), gain=a.ad>0?a.ad:0;
+      var pay=cost(c), gain=a.ad>0?a.ad:0; if(a.spec&&M.vigour) pay=pay*0.9; if(a.adGainAfter) gain=a.adGainAfter;
+      if(a.deathGrasp){ hits=[[1,450+40*necrosis,false,'d']]; necrosis=0; }
       if(a.blSpend&&bl>=4){ bl-=4;
         if(a.blSpend==='assault') hits=hits.map(function(h){return [h[0],180,h[2],h[3]];});
         if(a.blSpend==='hurricane') hits.push([1,85,9,'d']);
@@ -65,7 +73,7 @@ function simulate(D, bar, o){
         if(a.charges){ if(ch[c]===undefined){ch[c]=a.charges; chq[c]=[];} ch[c]--; chq[c].push(t+a.cd); }
         else { var cc=a.cd; if(c==='overpower'&&has('zerk')) cc=15; if(c==='skulls'&&has('ld')) cc=17; if(a.hurricane) cc=Math.max(0,cc-5*T); cd[grp(c)]=t+cc; } }
       // stacks/buffs
-      if(a.style==='melee'&&a.ad>0){ bl=Math.min(has('zerk')?8:4, bl+(a.bl||1)*(has('zerk')?2:1)); }
+      if(a.style==='melee'&&a.ad>0&&!a.spec){ bl=Math.min(has('zerk')?8:4, bl+(a.bl||1)*(has('zerk')?2:1)); }
       if(a.necrosis) necrosis=Math.min(12,necrosis+a.necrosis);
       if(c==='necromancy'&&has('ld')) necrosis=Math.min(12,necrosis+2);
       if(a.souls) souls=Math.min(soulCap,souls+a.souls);
@@ -107,15 +115,15 @@ function simulate(D, bar, o){
     (pend[t]||[]).forEach(function(p){ dmg+=Math.min(p.p,hp)+p.s; hp-=p.p; if(hp<=0) hp=HP; }); delete pend[t];
     t++;
   }
-  return {dpt:dmg/ticks, casts:casts};
+  return {dpt:dmg/ticks, casts:casts, trace:trace};
 }
 
-function available(D, style, weapon, locked){
+function available(D, style, weapon, locked, mods, mode){
   return Object.keys(D.abilities).filter(function(k){var a=D.abilities[k];
-    return a.style===style&&!a.basicAttack&&(!a.w||a.w===weapon)&&!(locked&&locked[k]);});
+    return a.style===style&&!a.basicAttack&&(!a.w||a.w===weapon)&&!(locked&&locked[k])&&(!a.spec||(mods&&mods[a.mod]&&mode!=='revo'));});
 }
 function optimise(D, o, locked){
-  var pool=available(D,o.style,o.weapon,locked); var opts=Object.assign({ticks:2000},o);
+  var pool=available(D,o.style,o.weapon,locked,o.mods,'revo'); var opts=Object.assign({ticks:2000},o);
   function sc(order){var b=order.slice(0,order.indexOf('X')); if(b.length>14) return -1; return simulate(D,b,opts).dpt;}
   function climb(order){ var cur=sc(order), improved=true, passes=0;
     while(improved&&passes<6){ improved=false; passes++;
@@ -137,6 +145,47 @@ function optimise(D, o, locked){
   var full=simulate(D,bar,Object.assign({},o,{ticks:o.evalTicks||12000}));
   return {bar:bar, dpt:full.dpt, casts:full.casts};
 }
-var api={simulate:simulate, optimise:optimise, available:available};
+
+function isBasic(D,k){var a=D.abilities[k]; return a.ad>0&&!a.ult&&!a.spec;}
+// Manual / hybrid optimiser: priority list + per-ability hold rules (extra adrenaline buffer, wait-for-stacks, wait-for-buff).
+function optimiseManual(D, o, locked){
+  var mode=o.mode; var pool=available(D,o.style,o.weapon,locked,o.mods,mode);
+  var BUFS=[0,10,20,30,45], WAITS=[null,'stack','buff'];
+  var opts=Object.assign({},o,{ticks:o.ticks||2000});
+  function canRule(k){ return mode==='manual' || !isBasic(D,k); }
+  function sc(order,rules){ var bar=order.slice(0,order.indexOf('X'));
+    if(mode==='hybrid'&&bar.filter(function(k){return isBasic(D,k);}).length>14) return -1;
+    return simulate(D,bar,Object.assign({},opts,{policy:{mode:mode,rules:rules}})).dpt; }
+  var seedBar=(o.seedBar||[]).filter(function(k){return pool.indexOf(k)>=0;});
+  var order=seedBar.concat(pool.filter(function(k){return seedBar.indexOf(k)<0&&D.abilities[k].spec;}),['X'],pool.filter(function(k){return seedBar.indexOf(k)<0&&!D.abilities[k].spec;}));
+  var rules=Object.assign({},o.seedRules||{}), cur=sc(order,rules), improved=true, passes=0;
+  while(improved&&passes<(o.passes||4)){ improved=false; passes++;
+    for(var i=0;i<order.length;i++) for(var j=0;j<order.length;j++){ if(i===j) continue;
+      var n=order.slice(); var x=n.splice(i,1)[0]; n.splice(j,0,x); var v=sc(n,rules); if(v>cur+1e-9){order=n;cur=v;improved=true;} }
+    order.slice(0,order.indexOf('X')).forEach(function(k){ if(!canRule(k)) return;
+      BUFS.forEach(function(b){ WAITS.forEach(function(w){ var r2=Object.assign({},rules); r2[k]={buf:b,wait:w};
+        var v=sc(order,r2); if(v>cur+1e-9){rules=r2;cur=v;improved=true;} }); }); });
+  }
+  var bar=order.slice(0,order.indexOf('X'));
+  var full=simulate(D,bar,Object.assign({},o,{ticks:o.evalTicks||12000,trace:true,policy:{mode:mode,rules:rules}}));
+  bar=bar.filter(function(k){return full.casts[k];});
+  Object.keys(rules).forEach(function(k){ if(bar.indexOf(k)<0||(!rules[k].buf&&!rules[k].wait)) delete rules[k]; });
+  var seq=full.trace.map(function(x){return x[1];});
+  return {bar:bar, rules:rules, dpt:full.dpt, casts:full.casts, trace:full.trace.slice(0,30), loop:findLoop(seq)};
+}
+function findLoop(seq){ // smallest period p (<=60 GCDs) that repeats exactly at least twice from some start <=150
+  for(var p=2;p<=60;p++) for(var s=0;s<=150;s++){ if(s+3*p>seq.length) break; var ok=true;
+    for(var i=s;i<s+2*p;i++) if(seq[i]!==seq[i+p]){ok=false;break;}
+    if(ok) return {start:s,period:p,seq:seq.slice(s,s+p)}; }
+  return null; }
+function optimiseMode(D,o,locked){ // full pipeline: revo -> hybrid -> manual (each seeds the next, so manual >= hybrid search start)
+  var rv=o.revoResult||optimise(D,Object.assign({},o,{restarts:o.restarts===undefined?1:o.restarts}),locked);
+  if(o.mode==='revo') return rv;
+  var hy=optimiseManual(D,Object.assign({},o,{mode:'hybrid',seedBar:rv.bar}),locked); hy.revoDpt=rv.dpt;
+  if(o.mode==='hybrid') return hy;
+  var ma=optimiseManual(D,Object.assign({},o,{mode:'manual',seedBar:hy.bar,seedRules:hy.rules}),locked); ma.revoDpt=rv.dpt; ma.hybridDpt=hy.dpt;
+  if(ma.dpt<hy.dpt){ var alt=optimiseManual(D,Object.assign({},o,{mode:'manual',seedBar:hy.bar,seedRules:hy.rules,passes:0}),locked); if(alt.dpt>ma.dpt){alt.revoDpt=rv.dpt; alt.hybridDpt=hy.dpt; ma=alt;} }
+  return ma; }
+var api={optimiseMode:optimiseMode, simulate:simulate, optimise:optimise, optimiseManual:optimiseManual, available:available, isBasic:isBasic};
 if(typeof module!=='undefined') module.exports=api; else root.RevoEngine=api;
 })(this);

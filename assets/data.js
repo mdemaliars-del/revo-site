@@ -80,12 +80,19 @@ var REVO_DATA = {
   finger:{n:'Finger of Death',style:'necro',icon:'Finger_of_Death.png',cd:0,ad:-60,hits:[[1,300,false,'d']],finger:true},
   siphon:{n:'Blood Siphon',style:'necro',icon:'Blood_Siphon.png',cd:75,ad:0,enh0:true,lock:9,hits:[[2,25,'o','d'],[4,25,'o','d'],[6,25,'o','d'],[8,25,'o','d'],[9,130,false,'d']]},
   skulls:{n:'Death Skulls',style:'necro',icon:'Death_Skulls.png',cd:100,ad:-60,ult:true,hits:[],skulls:true},
+  // ---------- SPECIAL ATTACKS (manual only: "Special Attacks cannot be automatically activated by Revolution" - wiki Weapon_Special_Attack) ----------
+  spec_ezk:{n:'Igneous Showdown (Ek-ZekKil spec)',style:'melee',icon:'Ek-ZekKil.png',w:'2h',spec:true,mod:'spec_ezk',cd:100,ad:-65,hits:[[1,280,false,'d'],[2,255,false,'d'],[3,255,false,'d'],[4,255,false,'d']],adGainAfter:15},
+  spec_leng:{n:'Dark Shard of Leng spec',style:'melee',icon:'Dark_Shard_of_Leng.png',w:'dw',spec:true,mod:'spec_leng',cd:25,ad:-30,hits:[[1,125,false,'d'],[2,190,9,'d']]},
+  spec_deathguard:{n:'Death Grasp (Death guard T70+ spec)',style:'necro',icon:'Death_guard_(tier_90).png',spec:true,mod:'spec_deathguard',cd:50,ad:-25,hits:[[1,450,false,'d']],deathGrasp:true},
   livingdeath:{n:'Living Death',style:'necro',icon:'Living_Death.png',cd:150,ad:-100,ult:true,hits:[],buff:{id:'ld',dur:50,mult:1}}
  }
 };
 if (typeof module !== 'undefined') module.exports = REVO_DATA;
 // Gear / relic / perk toggles (values from the wiki pages listed in src).
 var REVO_MODS = [
+ {id:'spec_ezk',n:'Ek-ZekKil equipped (2h melee): Igneous Showdown spec',type:'bool',style:'melee',d:'65% adrenaline, 60s cd; 260-300% then 3x245-265% vs Flamebound Rival (assumed), +15% adrenaline. Manual modes only.',src:'Ek-ZekKil'},
+ {id:'spec_leng',n:'Dark Shard of Leng equipped (DW melee): spec',type:'bool',style:'melee',d:'30% adrenaline, 15s cd; 115-135% then 175-205% AoE (Primordial Ice ignored). Manual modes only.',src:'Dark_Shard_of_Leng'},
+ {id:'spec_deathguard',n:'Death guard T70+ equipped: Death Grasp spec',type:'bool',style:'necro',d:'25% adrenaline, 30s cd; 405-495% +40% per Necrosis stack consumed. Manual modes only.',src:'Death_Grasp'},
  {id:'fots',n:'Fury of the Small (relic)',type:'bool',d:'Basic abilities +1% adrenaline',src:'Fury_of_the_Small'},
  {id:'heightened',n:'Heightened Senses (relic)',type:'bool',d:'+10% max adrenaline',src:'Heightened_Senses'},
  {id:'coe',n:'Conservation of Energy (relic)',type:'bool',d:'Refund 10% adrenaline after an ultimate',src:'Conservation_of_Energy'},

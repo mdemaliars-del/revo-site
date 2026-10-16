@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><title>RS3 Revolution Bar Optimiser</title>
-<style>
+<style>.seq{display:flex;flex-wrap:wrap;gap:3px}.seq div{width:40px;text-align:center;font-size:10px;color:#aaa}.seq img{width:32px;height:32px}.tag{font-size:11px;padding:1px 5px;border-radius:3px;background:#444;margin-left:4px}.loop img{border:2px solid #6c6}ol li{margin:4px 0}
 body{font-family:system-ui,sans-serif;background:#16181d;color:#e6e6e6;margin:0;padding:20px;max-width:1200px}
 h1{margin:0 0 4px}a{color:#8cf}.muted{color:#999;font-size:13px}
 .row{display:flex;gap:20px;flex-wrap:wrap}.card{background:#22252c;border-radius:8px;padding:14px;margin:12px 0}
@@ -13,28 +13,31 @@ td img{width:32px;height:32px}</style></head><body>
 <h1>RS3 Revolution++ Bar Optimiser</h1>
 <div class="muted">Post-Combat Style Modernisation (2 Mar 2026) data from the RuneScape Wiki. Expected-value tick simulation of Revolution: leftmost ready & affordable ability fires each global cooldown (3 ticks); basic attack fires if nothing else can. Units: % ability damage.</div>
 <div class="card row">
+ <label>Mode <select id="mode"><option value="revo">Full Revolution (Revolution++)</option><option value="hybrid">Basics-only Revolution + manual</option><option value="manual">Full Manual</option></select></label>
  <label>Style <select id="style"></select></label>
  <label>Weapon <select id="weapon"></select></label>
  <label>Targets <select id="targets"><option value="1">1 (single target)</option><option value="3">3 (AoE)</option><option value="5">5 (AoE)</option></select></label>
  <button id="go">Recompute</button> <span id="status"></span>
 </div>
-<div class="card"><h3 style="margin-top:0">Optimal bar</h3><div id="bar" class="bar"></div><p id="stats"></p><div id="note" class="muted"></div></div>
+<div class="card"><h3 style="margin-top:0" id="barTitle">Optimal bar</h3><div id="bar" class="bar"></div><p id="stats"></p><div id="extra"></div><div id="note" class="muted"></div></div>
 <div class="row">
 <div class="card" style="flex:1;min-width:320px"><h3 style="margin-top:0">Unlocked abilities (untick = not unlocked)</h3><div id="abil" class="chk"></div></div>
 <div class="card" style="flex:1;min-width:320px"><h3 style="margin-top:0">Gear, relics &amp; perks</h3><div id="mods" class="chk"></div>
 <p><button id="applyMods">Apply gear &amp; relics</button> <span id="modState" class="muted">Applied</span></p></div>
 </div>
-<div class="card"><h3 style="margin-top:0">Default optimal bars (all unlocked, no modifiers)</h3><div id="defaults"></div></div>
+<div class="card"><h3 style="margin-top:0">Default results (all unlocked, no gear/relics, no special attacks)</h3><div id="defaults"></div></div>
 <div class="card muted" id="notes"></div>
 <script src="assets/data.js"></script><script src="assets/engine.js"></script><script src="assets/defaults.js"></script>
 <script>
 var D=REVO_DATA, A=D.abilities, $=function(i){return document.getElementById(i)}, locked={}, mods={}, pendingMods={}, runCount=0;
+var MODE_LABEL={revo:'Full Revolution',hybrid:'Basics-only Revolution + manual',manual:'Full Manual'};
+function typeLabel(k){var a=A[k]; if(a.spec) return 'Special attack'; if(a.ult) return 'Ultimate'; if(a.ad>0) return 'Basic'; return 'Enhanced (formerly thresholds)';}
 var WN={'2h':'Two-handed','dw':'Dual-wield (main + off-hand)'};
 Object.keys(D.styles).forEach(function(s){$('style').add(new Option(D.styles[s].label,s));});
 function fillWeapons(){var s=$('style').value; $('weapon').innerHTML=''; D.styles[s].weapons.forEach(function(w){$('weapon').add(new Option(WN[w],w));});}
-function icon(k){return '<img src="assets/icons/'+encodeURIComponent(A[k].icon)+'" alt="">';}
+function icon(k){return '<img src="assets/icons/'+encodeURIComponent(A[k].icon)+'" alt="'+A[k].n+'" title="'+A[k].n+' ('+typeLabel(k)+')">';}
 function renderChecks(){var s=$('style').value,w=$('weapon').value;
- $('abil').innerHTML=RevoEngine.available(D,s,w,null).map(function(k){return '<label><input type="checkbox" data-k="'+k+'" '+(locked[k]?'':'checked')+'>'+icon(k)+A[k].n+'</label>';}).join('');
+ $('abil').innerHTML=RevoEngine.available(D,s,w,null).filter(function(k){return !A[k].spec;}).map(function(k){return '<label><input type="checkbox" data-k="'+k+'" '+(locked[k]?'':'checked')+'>'+icon(k)+A[k].n+'<span class="tag">'+typeLabel(k)+'</span></label>';}).join('');
  $('abil').querySelectorAll('input').forEach(function(i){i.onchange=function(){locked[i.dataset.k]=!i.checked; run();};});
  $('mods').innerHTML=REVO_MODS.filter(function(m){return !m.style||m.style===s;}).map(function(m){
   var ctl=m.type==='bool'?'<input type="checkbox" data-m="'+m.id+'" '+(pendingMods[m.id]?'checked':'')+'>':
@@ -46,22 +49,44 @@ function same(a,b){var k=Object.keys(a).concat(Object.keys(b)); return k.every(f
 function modState(){var d=!same(pendingMods,mods), e=$('modState');
  e.textContent=d?'Unapplied changes: press Apply to recompute':'Applied'; e.style.color=d?'#f96':''; e.style.fontWeight=d?'bold':'';}
 function barHtml(bar){return bar.map(function(k,i){return '<div class="slot"><b>'+(i+1)+'</b>'+icon(k)+'<div>'+A[k].n+'</div></div>';}).join('');}
-var timer;
-function run(){clearTimeout(timer); $('status').textContent='⏳ Recomputing optimal bar (about 6 s)…'; $('applyMods').disabled=true; document.body.style.cursor='progress'; timer=setTimeout(function(){
- var o={style:$('style').value,weapon:$('weapon').value,targets:+$('targets').value,mods:mods,restarts:1};
- var dk=D.styles[o.style].label+' / '+(o.weapon==='2h'?'2h':'DW')+' / '+(o.targets===1?'single target':'3 targets'); o.seeds=Object.keys(REVO_DEFAULTS).filter(function(k){return k.indexOf(D.styles[o.style].label)===0;}).map(function(k){return REVO_DEFAULTS[k].bar;}); if(REVO_DEFAULTS[dk]) o.seeds.unshift(REVO_DEFAULTS[dk].bar);
- var t0=performance.now(); var r=RevoEngine.optimise(D,o,locked);
- $('bar').innerHTML=barHtml(r.bar);
- $('stats').innerHTML='<b>'+r.dpt.toFixed(1)+'%</b> ability damage per tick &middot; <b>'+(r.dpt*3).toFixed(1)+'%</b> per GCD (incl. secondary targets) &middot; computed in '+Math.round(performance.now()-t0)+' ms';
+var timer, worker=null, reqId=0;
+try{ worker=new Worker('assets/worker.js'); worker.onerror=function(){worker=null;}; }catch(e){ worker=null; }
+function ruleText(k,r){var a=A[k], t=[]; var c=a.finger?'0-60% (Necrosis-reduced)':(a.ad<0?(-a.ad)+'%':null);
+ t.push('when off cooldown'+(c?' and you have '+(r&&r.buf?'≥ cost + '+r.buf+'% adrenaline (cost '+c+')':'its cost ('+c+')'):''));
+ if(r&&r.wait==='stack') t.push(a.style==='melee'?'only at 4+ Bloodlust stacks':(a.volley?'only at full Residual Souls':'only at 6+ Necrosis stacks (after Touch of Death)'));
+ if(r&&r.wait==='buff') t.push('only while a damage buff is up (Chaos Roar / Greater Fury / Conc. Blast crit buff, or Berserk / Death\'s Swiftness / Sunshine / Living Death)');
+ return t.join(', ');}
+function seqHtml(tr){return '<div class="seq">'+tr.map(function(x,i){return '<div>'+icon(x[1])+'<br>'+(i+1)+'<br>'+x[2]+'%</div>';}).join('')+'</div><div class="muted">Number = GCD order; % = adrenaline before the cast.</div>';}
+function show(o,r,t0){
+ var sub=[]; if(r.revoDpt!==undefined) sub.push('Full Revolution: '+r.revoDpt.toFixed(1)); if(r.hybridDpt!==undefined) sub.push('Basics-only Revo + manual: '+r.hybridDpt.toFixed(1));
+ $('stats').innerHTML='<b>'+r.dpt.toFixed(1)+'%</b> ability damage per tick &middot; <b>'+(r.dpt*3).toFixed(1)+'%</b> per GCD'+(sub.length?' &middot; vs '+sub.join(', ')+' %/tick':'')+' &middot; '+Math.round(performance.now()-t0)+' ms';
+ var ex='';
+ if(o.mode==='revo'){ $('barTitle').textContent='Optimal Revolution bar (slots 1-14)'; $('bar').innerHTML=barHtml(r.bar); }
+ else if(o.mode==='hybrid'){ var bas=r.bar.filter(function(k){return RevoEngine.isBasic(D,k)}), man=r.bar.filter(function(k){return !RevoEngine.isBasic(D,k)});
+  $('barTitle').textContent='Revolution bar: basics only (Combat Settings: basic abilities on; enhanced and ultimate auto-fire off)'; $('bar').innerHTML=barHtml(bas);
+  ex='<h4>Press manually (highest priority first)</h4><ol>'+man.map(function(k){var hi=r.bar.slice(0,r.bar.indexOf(k)).filter(function(x){return RevoEngine.isBasic(D,x)}); return '<li>'+icon(k)+' <b>'+A[k].n+'</b> <span class="tag">'+typeLabel(k)+'</span>: '+ruleText(k,r.rules[k])+(hi.length?', but let Revolution fire '+hi.map(function(x){return A[x].n}).join(' / ')+' first if ready':'')+'</li>';}).join('')+'</ol>'+
+   '<h4>Opening (first 30 GCDs)</h4>'+seqHtml(r.trace); }
+ else { $('barTitle').textContent='Full Manual rotation'; $('bar').innerHTML='';
+  ex='<h4>Opening sequence (first 30 GCDs from 0% adrenaline)</h4>'+seqHtml(r.trace)+
+   (r.loop?'<h4>Repeating loop ('+r.loop.period+' GCDs, from GCD '+(r.loop.start+1)+')</h4><div class="seq loop">'+r.loop.seq.map(function(k){return '<div>'+icon(k)+'</div>';}).join('')+'</div>':'<p class="muted">No exact repeating loop within 60 GCDs (cooldowns of 100-150 ticks keep shifting the pattern); follow the priority list below.</p>')+
+   '<h4>Priority list (press the first one that qualifies each GCD)</h4><ol>'+r.bar.map(function(k){return '<li>'+icon(k)+' <b>'+A[k].n+'</b> <span class="tag">'+typeLabel(k)+'</span>: '+ruleText(k,r.rules[k])+'</li>';}).join('')+'<li>otherwise the basic attack</li></ol>'; }
+ $('extra').innerHTML=ex;
  var cs=Object.keys(r.casts).sort(function(a,b){return r.casts[b]-r.casts[a]}).map(function(k){return A[k].n+': '+(r.casts[k]/120).toFixed(1)}).join(', ');
- $('note').innerHTML='Casts per 100 ticks: '+cs+(o.style==='necro'?'<br>Necromancy has no two-handed option: it is always main-hand + off-hand.':'')+((o.style==='ranged'||o.style==='magic')?'<br>Per the wiki, ranged/magic ability kits and damage do not differ between 2h and dual-wield after weapon unification, so both variants give the same bar.':'');
- $('status').textContent=''; $('applyMods').disabled=false; document.body.style.cursor=''; runCount++; document.body.dataset.runs=runCount; modState();},30);}
-function defaults(){var h='<table><tr><th>Style / weapon / targets</th><th>%AD per tick</th><th>Bar (slot 1 → 14)</th></tr>';
- Object.keys(REVO_DEFAULTS).forEach(function(k){var r=REVO_DEFAULTS[k]; h+='<tr><td>'+k+'</td><td>'+r.dpt.toFixed(1)+'</td><td><div class="bar">'+r.bar.map(function(a){return '<span title="'+A[a].n+'">'+icon(a)+'</span>';}).join('')+'</div></td></tr>';});
+ $('note').innerHTML='Casts per 100 ticks: '+cs+(o.style==='necro'?'<br>Necromancy has no two-handed option: it is always main-hand + off-hand.':'')+((o.style==='ranged'||o.style==='magic')?'<br>Per the wiki, ranged/magic ability kits and damage do not differ between 2h and dual-wield after weapon unification, so both variants give the same result.':'')+(o.mode==='revo'?'<br>Special attacks are never auto-fired by Revolution (wiki); switch mode to include them.':'');
+ $('status').textContent=''; $('applyMods').disabled=false; document.body.style.cursor=''; runCount++; document.body.dataset.runs=runCount; modState(); }
+function run(){clearTimeout(timer); $('status').textContent='⏳ Recomputing ('+MODE_LABEL[$('mode').value]+', up to ~15 s)…'; $('applyMods').disabled=true; document.body.style.cursor='progress'; timer=setTimeout(function(){
+ var o={mode:$('mode').value,style:$('style').value,weapon:$('weapon').value,targets:+$('targets').value,mods:mods,restarts:1};
+ var dk=D.styles[o.style].label+' / '+(o.weapon==='2h'?'2h':'DW')+' / '+(o.targets===1?'single target':'3 targets'); o.seeds=Object.keys(REVO_DEFAULTS).filter(function(k){return k.indexOf(D.styles[o.style].label)===0;}).map(function(k){return REVO_DEFAULTS[k].bar;}); if(REVO_DEFAULTS[dk]) o.seeds.unshift(REVO_DEFAULTS[dk].bar);
+ var t0=performance.now(), id=++reqId;
+ if(worker){ worker.onmessage=function(e){ if(e.data.id===reqId) show(o,e.data.r,t0); }; worker.postMessage({id:id,o:o,locked:locked}); }
+ else show(o,RevoEngine.optimiseMode(D,o,locked),t0);
+ },30);}
+function defaults(){var h='<table><tr><th>Style / weapon / targets</th><th>Full Revo %AD/tick</th><th>Basics-Revo + manual</th><th>Full Manual</th><th>Full Revolution bar (slot 1 → 14)</th></tr>';
+ Object.keys(REVO_DEFAULTS).forEach(function(k){var r=REVO_DEFAULTS[k]; var mm=(typeof REVO_DEFAULT_MODES!=='undefined'&&REVO_DEFAULT_MODES[k])||{}; h+='<tr><td>'+k+'</td><td>'+r.dpt.toFixed(1)+'</td><td>'+(mm.hybrid?mm.hybrid.toFixed(1):'-')+'</td><td>'+(mm.manual?mm.manual.toFixed(1):'-')+'</td><td><div class="bar">'+r.bar.map(function(a){return '<span title="'+A[a].n+'">'+icon(a)+'</span>';}).join('')+'</div></td></tr>';});
  $('defaults').innerHTML=h+'</table>';}
 $('notes').innerHTML=REVO_NOTES;
 $('style').onchange=function(){fillWeapons();renderChecks();run();}; $('weapon').onchange=function(){renderChecks();run();};
 $('applyMods').onclick=function(){mods=Object.assign({},pendingMods); modState(); run();};
-$('targets').onchange=run; $('go').onclick=run;
+$('targets').onchange=run; $('mode').onchange=run; $('go').onclick=run;
 fillWeapons(); renderChecks(); defaults(); run();
 </script></body></html>
