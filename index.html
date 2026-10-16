@@ -21,13 +21,14 @@ td img{width:32px;height:32px}</style></head><body>
 <div class="card"><h3 style="margin-top:0">Optimal bar</h3><div id="bar" class="bar"></div><p id="stats"></p><div id="note" class="muted"></div></div>
 <div class="row">
 <div class="card" style="flex:1;min-width:320px"><h3 style="margin-top:0">Unlocked abilities (untick = not unlocked)</h3><div id="abil" class="chk"></div></div>
-<div class="card" style="flex:1;min-width:320px"><h3 style="margin-top:0">Gear, relics &amp; perks</h3><div id="mods" class="chk"></div></div>
+<div class="card" style="flex:1;min-width:320px"><h3 style="margin-top:0">Gear, relics &amp; perks</h3><div id="mods" class="chk"></div>
+<p><button id="applyMods">Apply gear &amp; relics</button> <span id="modState" class="muted">Applied</span></p></div>
 </div>
 <div class="card"><h3 style="margin-top:0">Default optimal bars (all unlocked, no modifiers)</h3><div id="defaults"></div></div>
 <div class="card muted" id="notes"></div>
 <script src="assets/data.js"></script><script src="assets/engine.js"></script><script src="assets/defaults.js"></script>
 <script>
-var D=REVO_DATA, A=D.abilities, $=function(i){return document.getElementById(i)}, locked={}, mods={};
+var D=REVO_DATA, A=D.abilities, $=function(i){return document.getElementById(i)}, locked={}, mods={}, pendingMods={}, runCount=0;
 var WN={'2h':'Two-handed','dw':'Dual-wield (main + off-hand)'};
 Object.keys(D.styles).forEach(function(s){$('style').add(new Option(D.styles[s].label,s));});
 function fillWeapons(){var s=$('style').value; $('weapon').innerHTML=''; D.styles[s].weapons.forEach(function(w){$('weapon').add(new Option(WN[w],w));});}
@@ -36,14 +37,17 @@ function renderChecks(){var s=$('style').value,w=$('weapon').value;
  $('abil').innerHTML=RevoEngine.available(D,s,w,null).map(function(k){return '<label><input type="checkbox" data-k="'+k+'" '+(locked[k]?'':'checked')+'>'+icon(k)+A[k].n+'</label>';}).join('');
  $('abil').querySelectorAll('input').forEach(function(i){i.onchange=function(){locked[i.dataset.k]=!i.checked; run();};});
  $('mods').innerHTML=REVO_MODS.filter(function(m){return !m.style||m.style===s;}).map(function(m){
-  var ctl=m.type==='bool'?'<input type="checkbox" data-m="'+m.id+'" '+(mods[m.id]?'checked':'')+'>':
-   '<select data-m="'+m.id+'">'+Array.from({length:m.max+1},function(_,i){return '<option '+((mods[m.id]||0)==i?'selected':'')+'>'+i+'</option>';}).join('')+'</select>';
+  var ctl=m.type==='bool'?'<input type="checkbox" data-m="'+m.id+'" '+(pendingMods[m.id]?'checked':'')+'>':
+   '<select data-m="'+m.id+'">'+Array.from({length:m.max+1},function(_,i){return '<option '+((pendingMods[m.id]||0)==i?'selected':'')+'>'+i+'</option>';}).join('')+'</select>';
   return '<label title="'+m.d+'">'+ctl+'<span>'+m.n+' <a href="https://runescape.wiki/w/'+m.src+'" target="_blank">wiki</a></span></label>';}).join('');
- $('mods').querySelectorAll('[data-m]').forEach(function(e){e.onchange=function(){mods[e.dataset.m]=e.type==='checkbox'?(e.checked?1:0):+e.value; run();};});
+ $('mods').querySelectorAll('[data-m]').forEach(function(e){e.onchange=function(){pendingMods[e.dataset.m]=e.type==='checkbox'?(e.checked?1:0):+e.value; modState();};});
 }
+function same(a,b){var k=Object.keys(a).concat(Object.keys(b)); return k.every(function(x){return (a[x]||0)===(b[x]||0);});}
+function modState(){var d=!same(pendingMods,mods), e=$('modState');
+ e.textContent=d?'Unapplied changes: press Apply to recompute':'Applied'; e.style.color=d?'#f96':''; e.style.fontWeight=d?'bold':'';}
 function barHtml(bar){return bar.map(function(k,i){return '<div class="slot"><b>'+(i+1)+'</b>'+icon(k)+'<div>'+A[k].n+'</div></div>';}).join('');}
 var timer;
-function run(){clearTimeout(timer); $('status').textContent='optimising…'; timer=setTimeout(function(){
+function run(){clearTimeout(timer); $('status').textContent='⏳ Recomputing optimal bar (about 6 s)…'; $('applyMods').disabled=true; document.body.style.cursor='progress'; timer=setTimeout(function(){
  var o={style:$('style').value,weapon:$('weapon').value,targets:+$('targets').value,mods:mods,restarts:1};
  var dk=D.styles[o.style].label+' / '+(o.weapon==='2h'?'2h':'DW')+' / '+(o.targets===1?'single target':'3 targets'); o.seeds=Object.keys(REVO_DEFAULTS).filter(function(k){return k.indexOf(D.styles[o.style].label)===0;}).map(function(k){return REVO_DEFAULTS[k].bar;}); if(REVO_DEFAULTS[dk]) o.seeds.unshift(REVO_DEFAULTS[dk].bar);
  var t0=performance.now(); var r=RevoEngine.optimise(D,o,locked);
@@ -51,12 +55,13 @@ function run(){clearTimeout(timer); $('status').textContent='optimising…'; tim
  $('stats').innerHTML='<b>'+r.dpt.toFixed(1)+'%</b> ability damage per tick &middot; <b>'+(r.dpt*3).toFixed(1)+'%</b> per GCD (incl. secondary targets) &middot; computed in '+Math.round(performance.now()-t0)+' ms';
  var cs=Object.keys(r.casts).sort(function(a,b){return r.casts[b]-r.casts[a]}).map(function(k){return A[k].n+': '+(r.casts[k]/120).toFixed(1)}).join(', ');
  $('note').innerHTML='Casts per 100 ticks: '+cs+(o.style==='necro'?'<br>Necromancy has no two-handed option: it is always main-hand + off-hand.':'')+((o.style==='ranged'||o.style==='magic')?'<br>Per the wiki, ranged/magic ability kits and damage do not differ between 2h and dual-wield after weapon unification, so both variants give the same bar.':'');
- $('status').textContent='';},30);}
+ $('status').textContent=''; $('applyMods').disabled=false; document.body.style.cursor=''; runCount++; document.body.dataset.runs=runCount; modState();},30);}
 function defaults(){var h='<table><tr><th>Style / weapon / targets</th><th>%AD per tick</th><th>Bar (slot 1 → 14)</th></tr>';
  Object.keys(REVO_DEFAULTS).forEach(function(k){var r=REVO_DEFAULTS[k]; h+='<tr><td>'+k+'</td><td>'+r.dpt.toFixed(1)+'</td><td><div class="bar">'+r.bar.map(function(a){return '<span title="'+A[a].n+'">'+icon(a)+'</span>';}).join('')+'</div></td></tr>';});
  $('defaults').innerHTML=h+'</table>';}
 $('notes').innerHTML=REVO_NOTES;
 $('style').onchange=function(){fillWeapons();renderChecks();run();}; $('weapon').onchange=function(){renderChecks();run();};
+$('applyMods').onclick=function(){mods=Object.assign({},pendingMods); modState(); run();};
 $('targets').onchange=run; $('go').onclick=run;
 fillWeapons(); renderChecks(); defaults(); run();
 </script></body></html>
